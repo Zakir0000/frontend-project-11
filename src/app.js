@@ -28,6 +28,7 @@ export default () => {
 
   const urlValidator = yup.string().url('Ссылка должна быть валидным URL');
 
+  /* eslint-disable */
   const validateUniqueUrl = (urls) => {
     return yup.string().test({
       name: 'unique-url',

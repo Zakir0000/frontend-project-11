@@ -1,7 +1,9 @@
 import onChange from 'on-change';
 
 export default (elements, state) => {
-  const { container, fields, errorFields, validFields } = elements;
+  const {
+    container, fields, errorFields, validFields,
+  } = elements;
 
   const renderForm = () => {
     const rowEl = document.createElement('div');
@@ -15,8 +17,7 @@ export default (elements, state) => {
     colEl.append(headingEl);
     const paragElLead = document.createElement('p');
     paragElLead.classList.add('lead');
-    paragElLead.textContent =
-      'Начните читать RSS сегодня! Это легко, это красиво.';
+    paragElLead.textContent = 'Начните читать RSS сегодня! Это легко, это красиво.';
     colEl.append(paragElLead);
     const formRowEl = document.createElement('div');
     formRowEl.classList.add('row');
@@ -90,7 +91,7 @@ export default (elements, state) => {
     }
   };
 
-  const watchedState = onChange(state, (path, value, prevValue) => {
+  const watchedState = onChange(state, (path) => {
     switch (path) {
       case 'form.status':
         renderForm();
