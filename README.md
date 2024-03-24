@@ -5,4 +5,4 @@
 ### Live Demo
 
 Visit the deployed site to see it in action:
-[My Awesome Project](https://frontend-project-11-5tc7fhll9-zakirs-projects.vercel.app)
+[My Awesome Project](https://frontend-project-11-bltzmw6o2-zakirs-projects.vercel.app)
