@@ -1,6 +1,8 @@
-import * as yup from 'yup';
 import watch from './view.js';
+import i18next from 'i18next';
+import * as yup from 'yup';
 import './styles.css';
+import resources from './locales/index.js';
 
 export default () => {
   const elements = {
@@ -9,6 +11,8 @@ export default () => {
     errorFields: {},
     validFields: {},
   };
+
+  const defaultLang = 'ru';
 
   const state = {
     form: {
@@ -23,20 +27,34 @@ export default () => {
     },
   };
 
-  const watchedState = watch(elements, state);
+  const i18n = i18next.createInstance();
+  i18n.init({
+    lng: defaultLang,
+    debug: false,
+    resources,
+  });
+
+  yup.setLocale({
+    string: {
+      url: () => i18n.t('errors.validation.url'),
+      uniqueUrl: () => i18n.t('errors.validation.uniqueUrl'),
+    },
+  });
+
+  const watchedState = watch(elements, state, i18n);
   watchedState.form.status = 'filling';
 
-  const urlValidator = yup.string().url('Ссылка должна быть валидным URL');
+  const urlValidator = yup.string().url();
 
   /* eslint-disable */
   const validateUniqueUrl = (urls) => {
     return yup.string().test({
       name: 'unique-url',
-      message: 'RSS уже существует',
       test: function (value) {
         if (!value) return true;
         return !urls.includes(value);
       },
+      message: i18n.t('errors.validation.uniqueUrl'),
     });
   };
 

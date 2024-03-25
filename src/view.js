@@ -1,9 +1,7 @@
 import onChange from 'on-change';
 
-export default (elements, state) => {
-  const {
-    container, fields, errorFields, validFields,
-  } = elements;
+export default (elements, state, i18n) => {
+  const { container, fields, errorFields, validFields } = elements;
 
   const renderForm = () => {
     const rowEl = document.createElement('div');
@@ -13,11 +11,11 @@ export default (elements, state) => {
     rowEl.append(colEl);
     const headingEl = document.createElement('h1');
     headingEl.classList.add('display-3', 'mb-0');
-    headingEl.textContent = 'RSS агрегатор';
+    headingEl.textContent = i18n.t('heading');
     colEl.append(headingEl);
     const paragElLead = document.createElement('p');
     paragElLead.classList.add('lead');
-    paragElLead.textContent = 'Начните читать RSS сегодня! Это легко, это красиво.';
+    paragElLead.textContent = i18n.t('textUnderHeading');
     colEl.append(paragElLead);
     const formRowEl = document.createElement('div');
     formRowEl.classList.add('row');
@@ -32,7 +30,7 @@ export default (elements, state) => {
     inputEl.setAttribute('name', 'url');
     inputEl.setAttribute('aria-label', 'url');
     inputEl.classList.add('form-control', 'w-100');
-    inputEl.setAttribute('placeholder', 'ссылка RSS');
+    inputEl.setAttribute('placeholder', i18n.t('placeHolder'));
     inputEl.setAttribute('autocomplete', 'off');
     const labelEl = document.createElement('label');
     labelEl.setAttribute('for', 'url-input');
@@ -45,7 +43,7 @@ export default (elements, state) => {
     buttonEl.setAttribute('type', 'submit');
     buttonEl.setAttribute('aria-label', 'add');
     buttonEl.classList.add('h-100', 'btn', 'btn-lg', 'btn-primary', 'px-sm-5');
-    buttonEl.textContent = 'Добавить';
+    buttonEl.textContent = i18n.t('button');
     colAutoEl.append(buttonEl);
     formRowEl.append(formColEl, colAutoEl);
     const form = document.createElement('form');
@@ -54,7 +52,7 @@ export default (elements, state) => {
     form.append(formRowEl);
     const exapmleEl = document.createElement('p');
     exapmleEl.classList.add('mt-2', 'mb-0', 'text-muted');
-    exapmleEl.textContent = 'Пример: https://lorem-rss.hexlet.app/feed';
+    exapmleEl.textContent = i18n.t('example');
     const feedbackEl = document.createElement('p');
     feedbackEl.classList.add(
       'feedback',
