@@ -1,6 +1,6 @@
-import watch from './view.js';
-import i18next from 'i18next';
 import * as yup from 'yup';
+import i18next from 'i18next';
+import watch from './view.js';
 import './styles.css';
 import resources from './locales/index.js';
 
