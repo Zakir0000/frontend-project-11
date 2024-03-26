@@ -76,7 +76,7 @@ export default (elements, state, i18n) => {
 
   const handleErrors = () => {
     if (state.form.errors.length === 0) {
-      validFields.inputEl.textContent = 'RSS успешно загружен';
+      validFields.inputEl.textContent = i18n.t('success');
       validFields.inputEl.classList.add('text-success');
       validFields.inputEl.classList.remove('text-danger');
       fields.inputEl.classList.remove('is-invalid');
