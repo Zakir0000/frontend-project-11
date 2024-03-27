@@ -4,6 +4,7 @@ import axios from 'axios';
 import watch from './view.js';
 import { parseRSSPosts, parseRSSFeed } from './parser.js';
 import { renderFeeds, renderPosts } from './renderPostsAndFeeds.js';
+import uniqueId from 'lodash/uniqueId.js';
 
 import './styles.css';
 import resources from './locales/index.js';
@@ -19,6 +20,7 @@ export default () => {
   };
 
   const defaultLang = 'ru';
+  const defaultChannelId = uniqueId();
 
   const state = {
     form: {
@@ -29,6 +31,9 @@ export default () => {
     uiState: {
       validUrl: [],
     },
+    activeListId: defaultChannelId,
+    feedsList: [],
+    postsList: [],
   };
 
   const i18n = i18next.createInstance();
@@ -58,20 +63,21 @@ export default () => {
     .test(
       'is-rss-feed',
       i18n.t('errors.validation.rss'),
-      (value) => new Promise((resolve) => {
-        axios
-          .get(
-            `https://allorigins.hexlet.app/raw?disableCache=true&url=${encodeURIComponent(
-              value,
-            )}`,
-          )
-          .then((response) => {
-            resolve(response.status === 200);
-          })
-          .catch(() => {
-            resolve(false);
-          });
-      }),
+      (value) =>
+        new Promise((resolve) => {
+          axios
+            .get(
+              `https://allorigins.hexlet.app/raw?disableCache=true&url=${encodeURIComponent(
+                value,
+              )}`,
+            )
+            .then((response) => {
+              resolve(response.status === 200);
+            })
+            .catch(() => {
+              resolve(false);
+            });
+        }),
     );
 
   /* eslint-disable */
@@ -107,8 +113,7 @@ export default () => {
         watchedState.form.errors = [];
         watchedState.form.valid = true;
         watchedState.uiState.validUrl.push(inputData);
-        console.log('URL is valid:', inputData);
-        fetchRSSFeedPosts(inputData);
+        fetchAndProcessRSS(inputData);
       })
       .catch((error) => {
         watchedState.form.errors = error.errors[0];
@@ -116,7 +121,9 @@ export default () => {
       });
   });
 
-  const fetchRSSFeedPosts = (feedUrl) => {
+  const fetchAndProcessRSS = (feedUrl) => {
+    let feeds;
+    let posts;
     axios
       .get(
         `https://allorigins.hexlet.app/raw?disableCache=true&url=${encodeURIComponent(
@@ -124,13 +131,23 @@ export default () => {
         )}`,
       )
       .then((response) => {
-        const posts = parseRSSPosts(response.data);
-        const feeds = parseRSSFeed(response.data);
-        renderPosts(i18n, elements, posts);
-        renderFeeds(i18n, elements, feeds);
+        feeds = parseRSSFeed(response.data);
+        posts = parseRSSPosts(response.data, state);
+        setState(feeds, posts, watchedState);
+      })
+      .then(() => {
+        renderPosts(i18n, elements, watchedState);
+        renderFeeds(i18n, elements, watchedState);
+        setTimeout(() => fetchAndProcessRSS(feedUrl), 5000);
+        console.log(watchedState);
       })
       .catch((err) => {
         console.error('Error fetching or parsing RSS feed:', err);
       });
+  };
+
+  const setState = (feeds, posts, watchedState) => {
+    watchedState.feedsList.push(feeds);
+    watchedState.postsList = posts;
   };
 };

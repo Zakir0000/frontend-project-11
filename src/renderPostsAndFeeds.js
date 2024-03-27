@@ -1,7 +1,7 @@
 import uniqueId from 'lodash/uniqueId.js';
 
 /* eslint-disable */
-export const renderPosts = (i18n, elements, posts) => {
+export const renderPosts = (i18n, elements, watchedState) => {
   elements.postsContainer.innerHTML = '';
   const card = document.createElement('div');
   card.classList.add('card', 'border-0');
@@ -20,7 +20,7 @@ export const renderPosts = (i18n, elements, posts) => {
   const modalHeader = document.querySelector('.modal-header');
   const modalBody = document.querySelector('.modal-body');
 
-  posts.forEach((post) => {
+  watchedState.postsList.forEach((post) => {
     const uniqId = uniqueId();
     const postElement = document.createElement('li');
     postElement.classList.add(
@@ -72,7 +72,7 @@ export const renderPosts = (i18n, elements, posts) => {
   });
 };
 
-export const renderFeeds = (i18n, elements, feeds) => {
+export const renderFeeds = (i18n, elements, watchedState) => {
   elements.feedsContainer.innerHTML = '';
   const card = document.createElement('div');
   card.classList.add('card', 'border-0');
@@ -92,10 +92,10 @@ export const renderFeeds = (i18n, elements, feeds) => {
   li.classList.add('list-group-item', 'border-0', 'border-end-0');
   const feedHead = document.createElement('h3');
   feedHead.classList.add('h6', 'm-0');
-  feedHead.textContent = feeds.feedTitle;
+  feedHead.textContent = watchedState.feedsList[0].feedTitle;
   const feedParag = document.createElement('p');
   feedParag.classList.add('m-0', 'small', 'text-black-50');
-  feedParag.textContent = feeds.feedDescrip;
+  feedParag.textContent = watchedState.feedsList[0].feedDescrip;
   li.append(feedHead, feedParag);
   ul.append(li);
   card.append(ul);

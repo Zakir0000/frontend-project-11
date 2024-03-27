@@ -1,4 +1,7 @@
-export const parseRSSPosts = (xmlData) => {
+import uniqueId from 'lodash/uniqueId.js';
+const defaultId = uniqueId();
+
+export const parseRSSPosts = (xmlData, state) => {
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(xmlData, 'text/xml');
 
@@ -8,15 +11,24 @@ export const parseRSSPosts = (xmlData) => {
 
   const items = xmlDoc.getElementsByTagName('item');
 
-  const posts = [];
+  const newPosts = [];
   for (let i = 0; i < items.length; i += 1) {
     const title = items[i].getElementsByTagName('title')[0]?.textContent || '';
-    const description = items[i].getElementsByTagName('description')[0]?.textContent || '';
+    const description =
+      items[i].getElementsByTagName('description')[0]?.textContent || '';
     const link = items[i].getElementsByTagName('link')[0]?.textContent || '';
-    posts.push({ title, description, link });
+    newPosts.push({
+      title,
+      description,
+      link,
+      feedId: defaultId,
+      id: defaultId,
+    });
   }
 
-  return posts;
+  if (!state.postsList.some((item) => item.id === newPosts.id)) {
+    return newPosts;
+  }
 };
 
 export const parseRSSFeed = (xmlData) => {
@@ -26,6 +38,6 @@ export const parseRSSFeed = (xmlData) => {
   const feedTitle = channel.querySelector('title').textContent;
   const feedDescrip = channel.querySelector('description').textContent;
 
-  const feed = { feedTitle, feedDescrip };
+  const feed = { id: defaultId, feedTitle, feedDescrip };
   return feed;
 };
