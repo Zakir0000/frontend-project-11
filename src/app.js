@@ -2,6 +2,8 @@ import * as yup from 'yup';
 import i18next from 'i18next';
 import axios from 'axios';
 import watch from './view.js';
+import { parseRSSPosts, parseRSSFeed } from './parser.js';
+import { renderFeeds, renderPosts } from './renderPostsAndFeeds.js';
 
 import './styles.css';
 import resources from './locales/index.js';
@@ -10,6 +12,7 @@ export default () => {
   const elements = {
     container: document.querySelector('.container-fluid'),
     postsContainer: document.querySelector('.posts'),
+    feedsContainer: document.querySelector('.feeds'),
     fields: {},
     errorFields: {},
     validFields: {},
@@ -52,20 +55,24 @@ export default () => {
     .string()
     .url()
     .required()
-    .test('is-rss-feed', i18n.t('errors.validation.rss'), (value) => new Promise((resolve) => {
-      axios
-        .get(
-          `https://allorigins.hexlet.app/raw?disableCache=true&url=${encodeURIComponent(
-            value,
-          )}`,
-        )
-        .then((response) => {
-          resolve(response.status === 200);
-        })
-        .catch(() => {
-          resolve(false);
-        });
-    }));
+    .test(
+      'is-rss-feed',
+      i18n.t('errors.validation.rss'),
+      (value) => new Promise((resolve) => {
+        axios
+          .get(
+            `https://allorigins.hexlet.app/raw?disableCache=true&url=${encodeURIComponent(
+              value,
+            )}`,
+          )
+          .then((response) => {
+            resolve(response.status === 200);
+          })
+          .catch(() => {
+            resolve(false);
+          });
+      }),
+    );
 
   /* eslint-disable */
   const validateUniqueUrl = (urls) => {
@@ -95,7 +102,7 @@ export default () => {
     };
 
     schema
-      .validate(data)
+      .validate(data, { abortEarly: false })
       .then(() => {
         watchedState.form.errors = [];
         watchedState.form.valid = true;
@@ -104,7 +111,7 @@ export default () => {
         fetchRSSFeedPosts(inputData);
       })
       .catch((error) => {
-        watchedState.form.errors = error.message;
+        watchedState.form.errors = error.errors[0];
         console.log('Validation Error:', error.message);
       });
   });
@@ -112,51 +119,18 @@ export default () => {
   const fetchRSSFeedPosts = (feedUrl) => {
     axios
       .get(
-        `https://api.allorigins.win/raw?disableCache=true&url=${encodeURIComponent(
+        `https://allorigins.hexlet.app/raw?disableCache=true&url=${encodeURIComponent(
           feedUrl,
         )}`,
       )
       .then((response) => {
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(response.data, 'text/xml');
-        const items = xmlDoc.getElementsByTagName('item');
-        const posts = [];
-        for (let i = 0; i < items.length; i++) {
-          const title = items[i].getElementsByTagName('title')[0].textContent;
-          const description =
-            items[i].getElementsByTagName('description')[0].textContent;
-          posts.push({ title, description });
-        }
-        renderPosts(posts);
+        const posts = parseRSSPosts(response.data);
+        const feeds = parseRSSFeed(response.data);
+        renderPosts(i18n, elements, posts);
+        renderFeeds(i18n, elements, feeds);
       })
       .catch((err) => {
-        console.error('Error fetching RSS feed:', err);
+        console.error('Error fetching or parsing RSS feed:', err);
       });
-  };
-
-  const renderPosts = (posts) => {
-    elements.postsContainer.innerHTML = '';
-    const card = document.createElement('div');
-    card.classList.add('card', 'border-0');
-    const cardBody = document.createElement('div');
-    cardBody.classList.add('card-body');
-    const cardTitle = document.createElement('h2');
-    cardTitle.classList.add('card-title', 'h4');
-    cardTitle.textContent = i18n.t('postsHeader');
-    cardBody.append(cardTitle);
-    const ul = document.createElement('ul');
-    card.append(cardBody, ul);
-    ul.classList.add('list-group', 'border-0', 'rounded-0');
-
-    elements.postsContainer.append(card);
-    posts.forEach((post) => {
-      const postElement = document.createElement('div');
-      postElement.classList.add('post');
-      postElement.innerHTML = `
-      <h2>${post.title}</h2>
-      <p>${post.description}</p>
-      `;
-      card.appendChild(postElement);
-    });
   };
 };

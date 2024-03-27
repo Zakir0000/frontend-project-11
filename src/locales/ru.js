@@ -10,6 +10,7 @@ export default {
     example: 'Пример: https://lorem-rss.hexlet.app/feed',
     placeHolder: 'ссылка RSS',
     postsHeader: 'Посты',
+    feedsHeader: 'Фиды',
     success: 'RSS успешно загружен',
     errors: {
       validation: {
