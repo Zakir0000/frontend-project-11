@@ -2,7 +2,11 @@ import * as yup from 'yup';
 import i18next from 'i18next';
 import axios from 'axios';
 import watch from './view.js';
-import { parseRSSPosts, parseRSSFeed } from './parser.js';
+import {
+  parseRSSPosts,
+  parseRSSFeed,
+  parseRSSFeedValidator,
+} from './parser.js';
 import { renderFeeds, renderPosts } from './renderPostsAndFeeds.js';
 import uniqueId from 'lodash/uniqueId.js';
 
@@ -24,14 +28,17 @@ export default () => {
 
   const state = {
     form: {
-      status: null,
       valid: false,
       errors: [],
     },
-    uiState: {
-      validUrl: [],
+    processLoading: {
+      status: null,
+      errors: [],
     },
-    activeListId: defaultChannelId,
+    ui: {
+      seenPosts: [],
+      urlList: [],
+    },
     feedsList: [],
     postsList: [],
   };
@@ -54,7 +61,7 @@ export default () => {
   });
 
   const watchedState = watch(elements, state, i18n);
-  watchedState.form.status = 'filling';
+  watchedState.processLoading.status = 'filling';
 
   const urlValidator = yup
     .string()
@@ -67,12 +74,13 @@ export default () => {
         new Promise((resolve) => {
           axios
             .get(
-              `https://allorigins.hexlet.app/raw?disableCache=true&url=${encodeURIComponent(
+              `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(
                 value,
               )}`,
             )
-            .then((response) => {
-              resolve(response.status === 200);
+            .then((response) => response.data)
+            .then((data) => {
+              resolve(parseRSSFeedValidator(data));
             })
             .catch(() => {
               resolve(false);
@@ -96,15 +104,17 @@ export default () => {
     url: urlValidator,
     otherUrls: yup
       .array()
-      .of(yup.string().concat(validateUniqueUrl(state.uiState.validUrl))),
+      .of(yup.string().concat(validateUniqueUrl(state.ui.urlList))),
   });
 
-  document.querySelector('.rss-form').addEventListener('submit', (e) => {
+  const form = document.querySelector('.rss-form');
+
+  form.addEventListener('submit', (e) => {
     e.preventDefault();
     const inputData = document.getElementById('url-input').value;
     const data = {
       url: inputData,
-      otherUrls: state.uiState.validUrl,
+      otherUrls: state.ui.urlList,
     };
 
     schema
@@ -112,7 +122,7 @@ export default () => {
       .then(() => {
         watchedState.form.errors = [];
         watchedState.form.valid = true;
-        watchedState.uiState.validUrl.push(inputData);
+        watchedState.ui.urlList.push(inputData);
         fetchAndProcessRSS(inputData);
       })
       .catch((error) => {
@@ -125,11 +135,7 @@ export default () => {
     let feeds;
     let posts;
     axios
-      .get(
-        `https://allorigins.hexlet.app/raw?disableCache=true&url=${encodeURIComponent(
-          feedUrl,
-        )}`,
-      )
+      .get(`https://allorigins.hexlet.app/get?disableCache=true&url=${feedUrl}`)
       .then((response) => {
         feeds = parseRSSFeed(response.data);
         posts = parseRSSPosts(response.data, state);
@@ -138,7 +144,7 @@ export default () => {
       .then(() => {
         renderPosts(i18n, elements, watchedState);
         renderFeeds(i18n, elements, watchedState);
-        setTimeout(() => fetchAndProcessRSS(feedUrl), 5000);
+
         console.log(watchedState);
       })
       .catch((err) => {

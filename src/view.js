@@ -1,9 +1,7 @@
 import onChange from 'on-change';
 
 export default (elements, state, i18n) => {
-  const {
-    container, fields, errorFields, validFields,
-  } = elements;
+  const { container, fields, errorFields, validFields } = elements;
 
   const renderForm = () => {
     const rowEl = document.createElement('div');
@@ -69,7 +67,6 @@ export default (elements, state, i18n) => {
 
   const getFormElements = () => {
     fields.inputEl = document.querySelector('#url-input');
-
     errorFields.inputEl = document.querySelector('.feedback');
     validFields.inputEl = document.querySelector('.feedback');
   };
@@ -83,9 +80,7 @@ export default (elements, state, i18n) => {
       document.querySelector('.rss-form').reset();
     } else {
       fields.inputEl.classList.add('is-invalid');
-
       errorFields.inputEl.textContent = state.form.errors;
-
       errorFields.inputEl.classList.remove('text-success');
       errorFields.inputEl.classList.add('text-danger');
     }
@@ -93,7 +88,7 @@ export default (elements, state, i18n) => {
 
   const watchedState = onChange(state, (path) => {
     switch (path) {
-      case 'form.status':
+      case 'processLoading.status':
         renderForm();
         getFormElements();
         break;

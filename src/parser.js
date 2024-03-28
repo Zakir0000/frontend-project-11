@@ -3,7 +3,7 @@ const defaultId = uniqueId();
 
 export const parseRSSPosts = (xmlData, state) => {
   const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xmlData, 'text/xml');
+  const xmlDoc = parser.parseFromString(xmlData.contents, 'text/xml');
 
   if (!xmlDoc) {
     throw new Error('Failed to parse XML document');
@@ -33,11 +33,19 @@ export const parseRSSPosts = (xmlData, state) => {
 
 export const parseRSSFeed = (xmlData) => {
   const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xmlData, 'text/xml');
+  const xmlDoc = parser.parseFromString(xmlData.contents, 'text/xml');
   const channel = xmlDoc.querySelector('channel');
+
   const feedTitle = channel.querySelector('title').textContent;
   const feedDescrip = channel.querySelector('description').textContent;
 
   const feed = { id: defaultId, feedTitle, feedDescrip };
   return feed;
+};
+
+export const parseRSSFeedValidator = (data) => {
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(data.contents, 'text/xml');
+  const items = xmlDoc.getElementsByTagName('item');
+  return items.length > 0;
 };
