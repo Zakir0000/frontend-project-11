@@ -18,6 +18,7 @@ export default {
         uniqueUrl: 'RSS уже существует',
         rss: 'Ресурс не содержит валидный RSS',
         rssFeed: 'Невалидный RSS feed',
+        networkErr: 'Ошибка сети',
       },
     },
     // END

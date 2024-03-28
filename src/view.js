@@ -1,9 +1,12 @@
 import onChange from 'on-change';
 
 export default (elements, state, i18n) => {
-  const { container, fields, errorFields, validFields } = elements;
+  const {
+    container, fields, errorFields, validFields,
+  } = elements;
 
   const renderForm = () => {
+    container.innerHTML = '';
     const rowEl = document.createElement('div');
     rowEl.classList.add('row');
     const colEl = document.createElement('div');

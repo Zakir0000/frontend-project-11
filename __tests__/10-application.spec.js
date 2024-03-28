@@ -26,32 +26,31 @@ const corsProxy = 'https://allorigins.hexlet.app';
 
 let responseHandler;
 
-const getResponseHandler = (page) => (currentRssUrl, data) =>
-  page.route(`${corsProxy}/**`, (route) => {
-    const url = new URL(route.request().url());
-    if (url.pathname !== '/get') {
-      console.error('Expect proxified url to have "get" pathname');
-      return route.fulfill({ status: 500 });
-    }
+const getResponseHandler = (page) => (currentRssUrl, data) => page.route(`${corsProxy}/**`, (route) => {
+  const url = new URL(route.request().url());
+  if (url.pathname !== '/get') {
+    console.error('Expect proxified url to have "get" pathname');
+    return route.fulfill({ status: 500 });
+  }
 
-    if (!url.searchParams.get('disableCache')) {
-      console.error('Expect proxified url to have "disableCache" param');
-      return route.fulfill({ status: 500 });
-    }
+  if (!url.searchParams.get('disableCache')) {
+    console.error('Expect proxified url to have "disableCache" param');
+    return route.fulfill({ status: 500 });
+  }
 
-    if (url.searchParams.get('url') !== currentRssUrl) {
-      console.error(
-        'Expect proxified url to have "url" param with correct url',
-      );
-      return route.fulfill({ status: 500 });
-    }
+  if (url.searchParams.get('url') !== currentRssUrl) {
+    console.error(
+      'Expect proxified url to have "url" param with correct url',
+    );
+    return route.fulfill({ status: 500 });
+  }
 
-    return route.fulfill({
-      status: 200,
-      contentType: 'text/xml',
-      body: JSON.stringify({ contents: data }),
-    });
+  return route.fulfill({
+    status: 200,
+    contentType: 'text/xml',
+    body: JSON.stringify({ contents: data }),
   });
+});
 
 test.beforeEach(async ({ page }) => {
   responseHandler = getResponseHandler(page);

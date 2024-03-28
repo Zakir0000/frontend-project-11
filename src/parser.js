@@ -1,6 +1,8 @@
 import uniqueId from 'lodash/uniqueId.js';
+
 const defaultId = uniqueId();
 
+/* eslint-disable */
 export const parseRSSPosts = (xmlData, state) => {
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(xmlData.contents, 'text/xml');
@@ -42,7 +44,7 @@ export const parseRSSFeed = (xmlData) => {
   const feed = { id: defaultId, feedTitle, feedDescrip };
   return feed;
 };
-
+/* eslint-disable */
 export const parseRSSFeedValidator = (data) => {
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(data.contents, 'text/xml');

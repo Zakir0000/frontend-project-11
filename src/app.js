@@ -8,7 +8,6 @@ import {
   parseRSSFeedValidator,
 } from './parser.js';
 import { renderFeeds, renderPosts } from './renderPostsAndFeeds.js';
-import uniqueId from 'lodash/uniqueId.js';
 
 import './styles.css';
 import resources from './locales/index.js';
@@ -24,7 +23,7 @@ export default () => {
   };
 
   const defaultLang = 'ru';
-  const defaultChannelId = uniqueId();
+  // const defaultChannelId = uniqueId();
 
   const state = {
     form: {
@@ -67,25 +66,29 @@ export default () => {
     .string()
     .url()
     .required()
+    .test({
+      name: 'network-status',
+      message: i18n.t('errors.validation.networkErr'),
+      test: () => navigator.onLine,
+    })
     .test(
       'is-rss-feed',
       i18n.t('errors.validation.rss'),
-      (value) =>
-        new Promise((resolve) => {
-          axios
-            .get(
-              `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(
-                value,
-              )}`,
-            )
-            .then((response) => response.data)
-            .then((data) => {
-              resolve(parseRSSFeedValidator(data));
-            })
-            .catch(() => {
-              resolve(false);
-            });
-        }),
+      (value) => new Promise((resolve) => {
+        axios
+          .get(
+            `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(
+              value,
+            )}`,
+          )
+          .then((response) => response.data)
+          .then((data) => {
+            resolve(parseRSSFeedValidator(data));
+          })
+          .catch(() => {
+            resolve(false);
+          });
+      }),
     );
 
   /* eslint-disable */
@@ -126,8 +129,15 @@ export default () => {
         fetchAndProcessRSS(inputData);
       })
       .catch((error) => {
+        console.log(error.message);
+        if (error.message === 'Ошибка сети') {
+          watchedState.processLoading.status = 'error';
+          watchedState.form.errors = i18n.t('errors.validation.networkErr');
+        }
+        watchedState.processLoading.status = 'error';
         watchedState.form.errors = error.errors[0];
         console.log('Validation Error:', error.message);
+        console.log(watchedState);
       });
   });
 
@@ -144,11 +154,20 @@ export default () => {
       .then(() => {
         renderPosts(i18n, elements, watchedState);
         renderFeeds(i18n, elements, watchedState);
-
-        console.log(watchedState);
+        return { feeds, posts };
       })
+
       .catch((err) => {
-        console.error('Error fetching or parsing RSS feed:', err);
+        if (!navigator.onLine) {
+          console.log('Network Error:', 'Internet Disconnected');
+          watchedState.processLoading.status = 'error';
+          watchedState.form.errors = i18n.t('errors.validation.networkErr');
+        } else if (axios.isAxiosError(err)) {
+          watchedState.processLoading.status = 'error';
+          watchedState.form.errors = i18n.t('errors.validation.networkErr');
+        } else {
+          console.error('Error fetching or parsing RSS feed:', err);
+        }
       });
   };
 
@@ -156,4 +175,24 @@ export default () => {
     watchedState.feedsList.push(feeds);
     watchedState.postsList = posts;
   };
+
+  const checkForNewPosts = () => {
+    const promises = watchedState.ui.urlList.map((feedUrl) =>
+      fetchAndProcessRSS(feedUrl),
+    );
+
+    Promise.all(promises)
+      .then((results) => {
+        results.forEach(({ feeds, posts }) => {
+          watchedState.feedsList.push(feeds);
+          watchedState.postsList.push(...posts);
+        });
+      })
+      .catch((err) => {
+        console.error('Error processing RSS feeds:', err);
+      })
+      .then(() => setTimeout(checkForNewPosts, 5000));
+  };
+
+  checkForNewPosts();
 };
