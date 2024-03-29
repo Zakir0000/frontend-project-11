@@ -69,7 +69,21 @@ export default () => {
     .test({
       name: 'network-status',
       message: i18n.t('errors.validation.networkErr'),
-      test: () => navigator.onLine,
+      test: async (value) => {
+        if (!navigator.onLine) {
+          return false;
+        }
+        try {
+          await axios.get(
+            `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(
+              value,
+            )}`,
+          );
+          return true;
+        } catch (error) {
+          return false;
+        }
+      },
     })
     .test(
       'is-rss-feed',
@@ -129,15 +143,8 @@ export default () => {
         fetchAndProcessRSS(inputData);
       })
       .catch((error) => {
-        console.log(error.message);
-        if (error.message === 'Ошибка сети') {
-          watchedState.processLoading.status = 'error';
-          watchedState.form.errors = i18n.t('errors.validation.networkErr');
-        }
         watchedState.processLoading.status = 'error';
         watchedState.form.errors = error.errors[0];
-        console.log('Validation Error:', error.message);
-        console.log(watchedState);
       });
   });
 
