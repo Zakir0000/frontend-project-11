@@ -62,6 +62,7 @@ export default () => {
   const watchedState = watch(elements, state, i18n);
   watchedState.processLoading.status = 'filling';
 
+  /* eslint-disable */
   const urlValidator = yup
     .string()
     .url()
@@ -69,40 +70,46 @@ export default () => {
     .test({
       name: 'network-status',
       message: i18n.t('errors.validation.networkErr'),
-      test: async (value) => {
-        if (!navigator.onLine) {
-          return false;
-        }
-        try {
-          await axios.get(
-            `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(
-              value,
-            )}`,
-          );
-          return true;
-        } catch (error) {
-          return false;
-        }
+      test: (value) => {
+        return new Promise((resolve) => {
+          if (!navigator.onLine) {
+            resolve(false);
+          } else {
+            axios
+              .get(
+                `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(
+                  value,
+                )}`,
+              )
+              .then(() => {
+                resolve(true);
+              })
+              .catch(() => {
+                resolve(false);
+              });
+          }
+        });
       },
     })
     .test(
       'is-rss-feed',
       i18n.t('errors.validation.rss'),
-      (value) => new Promise((resolve) => {
-        axios
-          .get(
-            `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(
-              value,
-            )}`,
-          )
-          .then((response) => response.data)
-          .then((data) => {
-            resolve(parseRSSFeedValidator(data));
-          })
-          .catch(() => {
-            resolve(false);
-          });
-      }),
+      (value) =>
+        new Promise((resolve) => {
+          axios
+            .get(
+              `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(
+                value,
+              )}`,
+            )
+            .then((response) => response.data)
+            .then((data) => {
+              resolve(parseRSSFeedValidator(data));
+            })
+            .catch(() => {
+              resolve(false);
+            });
+        }),
     );
 
   /* eslint-disable */

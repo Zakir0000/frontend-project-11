@@ -1,14 +1,13 @@
-import { fileURLToPath } from 'url';
 import path from 'path';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const rootDir = process.cwd();
 
 export default {
   mode: 'development',
-  entry: './src/index.js',
+  entry: path.resolve(rootDir, 'src', 'index.js'),
   output: {
-    path: path.resolve(__dirname, 'dist'),
+    path: path.resolve(rootDir, 'dist'),
     filename: 'bundle.js',
   },
   module: {
@@ -21,7 +20,7 @@ export default {
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: 'index.html',
+      template: path.resolve(rootDir, 'index.html'),
     }),
   ],
   devServer: {
