@@ -20,7 +20,7 @@ export const renderPosts = (i18n, elements, watchedState) => {
   const modalHeader = document.querySelector('.modal-header');
   const modalBody = document.querySelector('.modal-body');
 
-  watchedState.postsList.forEach((post) => {
+  watchedState.feedsList.posts.forEach((post) => {
     const uniqId = uniqueId();
     const postElement = document.createElement('li');
     postElement.classList.add(
@@ -55,13 +55,15 @@ export const renderPosts = (i18n, elements, watchedState) => {
       modalHeader.innerHTML = '';
       modalBody.innerHTML = '';
       const closeBtn = document.createElement('button');
+      const buttnAlltext = document.querySelector('.modal-footer a');
+      buttnAlltext.setAttribute('href', post.link);
       closeBtn.classList.add('btn-close', 'close');
       closeBtn.setAttribute('type', 'button');
       closeBtn.setAttribute('data-bs-dismiss', 'modal');
       closeBtn.setAttribute('aria-label', 'Close');
 
       modalHeader.append(headTitle, closeBtn);
-      modalBody.textContent = post.description;
+      modalBody.textContent = post.desc;
       postLink.classList.remove('fw-bold');
       postLink.classList.add('fw-normal');
     });
@@ -92,10 +94,10 @@ export const renderFeeds = (i18n, elements, watchedState) => {
   li.classList.add('list-group-item', 'border-0', 'border-end-0');
   const feedHead = document.createElement('h3');
   feedHead.classList.add('h6', 'm-0');
-  feedHead.textContent = watchedState.feedsList[0].feedTitle;
+  feedHead.textContent = watchedState.feedsList.feed.feedTitle;
   const feedParag = document.createElement('p');
   feedParag.classList.add('m-0', 'small', 'text-black-50');
-  feedParag.textContent = watchedState.feedsList[0].feedDescrip;
+  feedParag.textContent = watchedState.feedsList.feed.feedDescrip;
   li.append(feedHead, feedParag);
   ul.append(li);
   card.append(ul);

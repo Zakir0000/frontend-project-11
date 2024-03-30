@@ -1,6 +1,5 @@
 export default {
   translation: {
-    // BEGIN
     languages: {
       ru: 'Русский',
     },
@@ -21,6 +20,5 @@ export default {
         networkErr: 'Ошибка сети',
       },
     },
-    // END
   },
 };

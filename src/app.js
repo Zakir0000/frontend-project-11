@@ -1,50 +1,66 @@
 import * as yup from 'yup';
+import onChange from 'on-change';
 import i18next from 'i18next';
 import axios from 'axios';
-import watch from './view.js';
-import {
-  parseRSSPosts,
-  parseRSSFeed,
-  parseRSSFeedValidator,
-} from './parser.js';
+import initView from './view.js';
 import { renderFeeds, renderPosts } from './renderPostsAndFeeds.js';
 
 import './styles.css';
 import resources from './locales/index.js';
+import parseRSSData from './parser.js';
 
 export default () => {
+  const addProxyToURL = (url) => {
+    const proxyURL = new URL('https://allorigins.hexlet.app/get');
+    proxyURL.searchParams.set('disableCache', 'true');
+    proxyURL.searchParams.set('url', url);
+    return proxyURL.toString();
+  };
+
+  const getErrorMessage = (err, i18n) => {
+    if (!navigator.onLine) {
+      return i18n.t('errors.validation.networkErr');
+    }
+    return `Error fetching or parsing RSS feed: ${err}`;
+  };
+
   const elements = {
     container: document.querySelector('.container-fluid'),
     postsContainer: document.querySelector('.posts'),
     feedsContainer: document.querySelector('.feeds'),
-    fields: {},
-    errorFields: {},
-    validFields: {},
+    fields: {
+      inputEl: document.querySelector('#url-input'),
+    },
+    errorFields: {
+      inputEl: document.querySelector('.feedback'),
+    },
+    validFields: {
+      inputEl: document.querySelector('.feedback'),
+    },
+    buttons: {
+      buttonEl: document.querySelector('button[type="submit"]'),
+    },
   };
-
-  const defaultLang = 'ru';
-  // const defaultChannelId = uniqueId();
 
   const state = {
     form: {
       valid: false,
-      errors: [],
+      errors: '',
     },
     processLoading: {
-      status: null,
-      errors: [],
+      status: 'filling',
+      errors: '',
     },
     ui: {
       seenPosts: [],
       urlList: [],
     },
     feedsList: [],
-    postsList: [],
   };
 
   const i18n = i18next.createInstance();
   i18n.init({
-    lng: defaultLang,
+    lng: 'ru',
     debug: false,
     resources,
   });
@@ -59,8 +75,7 @@ export default () => {
     },
   });
 
-  const watchedState = watch(elements, state, i18n);
-  watchedState.processLoading.status = 'filling';
+  const watchedState = onChange(state, initView(elements, i18n, state));
 
   /* eslint-disable */
   const urlValidator = yup
@@ -75,12 +90,9 @@ export default () => {
           if (!navigator.onLine) {
             resolve(false);
           } else {
+            const proxUrl = addProxyToURL(value);
             axios
-              .get(
-                `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(
-                  value,
-                )}`,
-              )
+              .get(proxUrl)
               .then(() => {
                 resolve(true);
               })
@@ -96,15 +108,12 @@ export default () => {
       i18n.t('errors.validation.rss'),
       (value) =>
         new Promise((resolve) => {
+          const proxUrl = addProxyToURL(value);
           axios
-            .get(
-              `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(
-                value,
-              )}`,
-            )
+            .get(proxUrl)
             .then((response) => response.data)
             .then((data) => {
-              resolve(parseRSSFeedValidator(data));
+              resolve(parseRSSData(data));
             })
             .catch(() => {
               resolve(false);
@@ -135,6 +144,7 @@ export default () => {
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
+    watchedState.processLoading.status = 'sending';
     const inputData = document.getElementById('url-input').value;
     const data = {
       url: inputData,
@@ -147,6 +157,7 @@ export default () => {
         watchedState.form.errors = [];
         watchedState.form.valid = true;
         watchedState.ui.urlList.push(inputData);
+        watchedState.processLoading.status = 'success';
         fetchAndProcessRSS(inputData);
       })
       .catch((error) => {
@@ -157,37 +168,27 @@ export default () => {
 
   const fetchAndProcessRSS = (feedUrl) => {
     let feeds;
-    let posts;
+    const proxyUrl = addProxyToURL(feedUrl);
     axios
-      .get(`https://allorigins.hexlet.app/get?disableCache=true&url=${feedUrl}`)
+      .get(proxyUrl)
       .then((response) => {
-        feeds = parseRSSFeed(response.data);
-        posts = parseRSSPosts(response.data, state);
-        setState(feeds, posts, watchedState);
+        feeds = parseRSSData(response.data);
+        setState(feeds, watchedState);
       })
       .then(() => {
         renderPosts(i18n, elements, watchedState);
         renderFeeds(i18n, elements, watchedState);
-        return { feeds, posts };
+        return { feeds };
       })
 
       .catch((err) => {
-        if (!navigator.onLine) {
-          console.log('Network Error:', 'Internet Disconnected');
-          watchedState.processLoading.status = 'error';
-          watchedState.form.errors = i18n.t('errors.validation.networkErr');
-        } else if (axios.isAxiosError(err)) {
-          watchedState.processLoading.status = 'error';
-          watchedState.form.errors = i18n.t('errors.validation.networkErr');
-        } else {
-          console.error('Error fetching or parsing RSS feed:', err);
-        }
+        getErrorMessage(err);
+        watchedState.processLoading.status = 'error';
       });
   };
 
-  const setState = (feeds, posts, watchedState) => {
-    watchedState.feedsList.push(feeds);
-    watchedState.postsList = posts;
+  const setState = (feeds, watchedState) => {
+    watchedState.feedsList = feeds;
   };
 
   const checkForNewPosts = () => {
@@ -197,15 +198,16 @@ export default () => {
 
     Promise.all(promises)
       .then((results) => {
-        results.forEach(({ feeds, posts }) => {
-          watchedState.feedsList.push(feeds);
-          watchedState.postsList.push(...posts);
-        });
+        if (results) {
+          results.forEach((feeds) => {
+            watchedState.feedsList.posts.push(...feeds);
+          });
+        }
       })
+      .then(() => setTimeout(checkForNewPosts, 5000))
       .catch((err) => {
         console.error('Error processing RSS feeds:', err);
-      })
-      .then(() => setTimeout(checkForNewPosts, 5000));
+      });
   };
 
   checkForNewPosts();

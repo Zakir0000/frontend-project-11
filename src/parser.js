@@ -1,53 +1,32 @@
-import uniqueId from 'lodash/uniqueId.js';
-
-const defaultId = uniqueId();
-
-/* eslint-disable */
-export const parseRSSPosts = (xmlData, state) => {
+const parseRSSData = (xmlData) => {
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(xmlData.contents, 'text/xml');
 
   if (!xmlDoc) {
-    throw new Error('Failed to parse XML document');
+    throw new Error(`${xmlDoc.querySelector('parsererror')}`);
   }
 
   const items = xmlDoc.getElementsByTagName('item');
-
-  const newPosts = [];
-  for (let i = 0; i < items.length; i += 1) {
-    const title = items[i].getElementsByTagName('title')[0]?.textContent || '';
-    const description =
-      items[i].getElementsByTagName('description')[0]?.textContent || '';
-    const link = items[i].getElementsByTagName('link')[0]?.textContent || '';
-    newPosts.push({
-      title,
-      description,
-      link,
-      feedId: defaultId,
-      id: defaultId,
-    });
-  }
-
-  if (!state.postsList.some((item) => item.id === newPosts.id)) {
-    return newPosts;
-  }
-};
-
-export const parseRSSFeed = (xmlData) => {
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xmlData.contents, 'text/xml');
   const channel = xmlDoc.querySelector('channel');
-
   const feedTitle = channel.querySelector('title').textContent;
   const feedDescrip = channel.querySelector('description').textContent;
 
-  const feed = { id: defaultId, feedTitle, feedDescrip };
-  return feed;
+  const parsedData = {
+    feed: { feedTitle, feedDescrip },
+    posts: [],
+  };
+
+  for (let i = 0; i < items.length; i += 1) {
+    const title = items[i].getElementsByTagName('title')[0]?.textContent || '';
+    const desc = items[i].getElementsByTagName('description')[0]?.textContent || '';
+    const link = items[i].getElementsByTagName('link')[0]?.textContent || '';
+    parsedData.posts.push({
+      title,
+      desc,
+      link,
+    });
+  }
+  return parsedData;
 };
-/* eslint-disable */
-export const parseRSSFeedValidator = (data) => {
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(data.contents, 'text/xml');
-  const items = xmlDoc.getElementsByTagName('item');
-  return items.length > 0;
-};
+
+export default parseRSSData;
