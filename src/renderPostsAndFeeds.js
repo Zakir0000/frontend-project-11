@@ -46,7 +46,7 @@ export const renderPosts = (i18n, elements, watchedState) => {
     buttonEl.setAttribute('data-bs-target', '#modal');
     buttonEl.textContent = 'Просмотр';
     postElement.append(postLink, buttonEl);
-    ul.appendChild(postElement);
+    ul.prepend(postElement);
     buttonEl.addEventListener('click', (e) => {
       e.preventDefault();
       const headTitle = document.createElement('h5');

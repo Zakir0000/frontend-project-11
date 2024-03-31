@@ -1,5 +1,6 @@
 import * as yup from 'yup';
 import onChange from 'on-change';
+import _ from 'lodash';
 import i18next from 'i18next';
 import axios from 'axios';
 import initView from './view.js';
@@ -153,7 +154,6 @@ export default () => {
       inputData,
       watchedState.ui.urlList,
     );
-
     validationSchema
       .validate(inputData, { abortEarly: false })
       .then(() => {
@@ -164,24 +164,31 @@ export default () => {
         fetchAndProcessRSS(inputData);
       })
       .catch((error) => {
+        const err = error.errors[0];
         watchedState.processLoading.status = 'error';
-        watchedState.form.errors = error.errors;
+        watchedState.form.errors = err;
       });
     const checkForNewPosts = () => {
-      const promises = watchedState.ui.urlList.map((feedUrl) => fetchAndProcessRSS(feedUrl));
+      const promises = watchedState.ui.urlList.map((feedUrl) => {
+        const proxyUrl = addProxyToURL(feedUrl);
+        return axios.get(proxyUrl).then((response) => {
+          const feeds = parseRSSData(response.data);
+
+          const clonePosts = _.cloneDeep(watchedState.ui.seenPosts);
+          const unitedPosts = [...clonePosts, ...feeds.posts];
+          const selectedUnique = Object.values(
+            unitedPosts.reduce((acc, obj) => {
+              acc[obj.title] = obj;
+              return acc;
+            }, {}),
+          );
+          watchedState.ui.seenPosts = selectedUnique.reverse();
+          renderPosts(i18n, elements, watchedState);
+          console.log(watchedState);
+        });
+      });
 
       Promise.all(promises)
-        .then((results) => {
-          results.forEach((feeds) => {
-            if (feeds && feeds.posts && Array.isArray(feeds.posts)) {
-              feeds.posts.forEach((post) => {
-                watchedState.ui.seenPosts.unshift(post);
-              });
-            } else {
-              console.log('Unexpected data format:', feeds);
-            }
-          });
-        })
         .then(() => setTimeout(checkForNewPosts, 5000))
         .catch((err) => {
           console.error('Error processing RSS feeds:', err);
