@@ -20,7 +20,7 @@ export const renderPosts = (i18n, elements, watchedState) => {
   const modalHeader = document.querySelector('.modal-header');
   const modalBody = document.querySelector('.modal-body');
 
-  watchedState.feedsList.posts.forEach((post) => {
+  watchedState.ui.seenPosts.reverse().forEach((post) => {
     const uniqId = uniqueId();
     const postElement = document.createElement('li');
     postElement.classList.add(
@@ -90,17 +90,18 @@ export const renderFeeds = (i18n, elements, watchedState) => {
   ul.classList.add('list-group', 'border-0', 'rounded-0');
   card.append(cardBody, ul);
   ul.classList.add('list-group', 'border-0', 'rounded-0');
-  const li = document.createElement('li');
-  li.classList.add('list-group-item', 'border-0', 'border-end-0');
-  const feedHead = document.createElement('h3');
-  feedHead.classList.add('h6', 'm-0');
-  feedHead.textContent = watchedState.feedsList.feed.feedTitle;
-  const feedParag = document.createElement('p');
-  feedParag.classList.add('m-0', 'small', 'text-black-50');
-  feedParag.textContent = watchedState.feedsList.feed.feedDescrip;
-  li.append(feedHead, feedParag);
-  ul.append(li);
-  card.append(ul);
-
+  watchedState.feedsList.forEach((item) => {
+    const li = document.createElement('li');
+    li.classList.add('list-group-item', 'border-0', 'border-end-0');
+    const feedHead = document.createElement('h3');
+    feedHead.classList.add('h6', 'm-0');
+    feedHead.textContent = item.feed.feedTitle;
+    const feedParag = document.createElement('p');
+    feedParag.classList.add('m-0', 'small', 'text-black-50');
+    feedParag.textContent = item.feed.feedDescrip;
+    li.append(feedHead, feedParag);
+    ul.append(li);
+    card.append(ul);
+  });
   elements.feedsContainer.append(card);
 };

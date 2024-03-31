@@ -53,6 +53,7 @@ export default () => {
     },
     ui: {
       seenPosts: [],
+      seenFeeds: [],
       urlList: [],
     },
     feedsList: [],
@@ -72,21 +73,50 @@ export default () => {
     mixed: {
       uniqueUrl: () => i18n.t('errors.validation.uniqueUrl'),
       rssFeed: () => i18n.t('errors.validation.rssFeed'),
+      notOneOf: () => i18n.t('errors.validation.uniqueUrl'),
     },
   });
 
   const watchedState = onChange(state, initView(elements, i18n, state));
 
-  /* eslint-disable */
-  const urlValidator = yup
-    .string()
-    .url()
-    .required()
-    .test({
-      name: 'network-status',
-      message: i18n.t('errors.validation.networkErr'),
-      test: (value) => {
-        return new Promise((resolve) => {
+  const form = document.querySelector('.rss-form');
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    watchedState.processLoading.status = 'sending';
+    const inputData = document.getElementById('url-input').value;
+
+    const setState = (feeds) => {
+      watchedState.feedsList.unshift(feeds);
+      feeds.posts.forEach((post) => watchedState.ui.seenPosts.push(post));
+    };
+    const fetchAndProcessRSS = (feedUrl) => {
+      const proxyUrl = addProxyToURL(feedUrl);
+      return axios
+        .get(proxyUrl)
+        .then((response) => {
+          const feeds = parseRSSData(response.data);
+          setState(feeds, watchedState);
+          renderPosts(i18n, elements, watchedState);
+          renderFeeds(i18n, elements, watchedState);
+          return feeds;
+        })
+
+        .catch((err) => {
+          getErrorMessage(err);
+          watchedState.processLoading.status = 'error';
+        });
+    };
+
+    const createValidationSchema = (url, feeds) => yup
+      .string()
+      .required()
+      .url()
+      .notOneOf(feeds)
+      .test({
+        name: 'network-status',
+        message: i18n.t('errors.validation.networkErr'),
+        test: (value) => new Promise((resolve) => {
           if (!navigator.onLine) {
             resolve(false);
           } else {
@@ -100,14 +130,12 @@ export default () => {
                 resolve(false);
               });
           }
-        });
-      },
-    })
-    .test(
-      'is-rss-feed',
-      i18n.t('errors.validation.rss'),
-      (value) =>
-        new Promise((resolve) => {
+        }),
+      })
+      .test(
+        'is-rss-feed',
+        i18n.t('errors.validation.rss'),
+        (value) => new Promise((resolve) => {
           const proxUrl = addProxyToURL(value);
           axios
             .get(proxUrl)
@@ -119,40 +147,15 @@ export default () => {
               resolve(false);
             });
         }),
+      );
+
+    const validationSchema = createValidationSchema(
+      inputData,
+      watchedState.ui.urlList,
     );
 
-  /* eslint-disable */
-  const validateUniqueUrl = (urls) => {
-    return yup.string().test({
-      name: 'unique-url',
-      message: i18n.t('errors.validation.uniqueUrl'),
-      test: function (value) {
-        if (!value) return true;
-        return !urls.includes(value);
-      },
-    });
-  };
-
-  const schema = yup.object().shape({
-    url: urlValidator,
-    otherUrls: yup
-      .array()
-      .of(yup.string().concat(validateUniqueUrl(state.ui.urlList))),
-  });
-
-  const form = document.querySelector('.rss-form');
-
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    watchedState.processLoading.status = 'sending';
-    const inputData = document.getElementById('url-input').value;
-    const data = {
-      url: inputData,
-      otherUrls: state.ui.urlList,
-    };
-
-    schema
-      .validate(data, { abortEarly: false })
+    validationSchema
+      .validate(inputData, { abortEarly: false })
       .then(() => {
         watchedState.form.errors = [];
         watchedState.form.valid = true;
@@ -162,53 +165,28 @@ export default () => {
       })
       .catch((error) => {
         watchedState.processLoading.status = 'error';
-        watchedState.form.errors = error.errors[0];
+        watchedState.form.errors = error.errors;
       });
-  });
+    const checkForNewPosts = () => {
+      const promises = watchedState.ui.urlList.map((feedUrl) => fetchAndProcessRSS(feedUrl));
 
-  const fetchAndProcessRSS = (feedUrl) => {
-    let feeds;
-    const proxyUrl = addProxyToURL(feedUrl);
-    axios
-      .get(proxyUrl)
-      .then((response) => {
-        feeds = parseRSSData(response.data);
-        setState(feeds, watchedState);
-      })
-      .then(() => {
-        renderPosts(i18n, elements, watchedState);
-        renderFeeds(i18n, elements, watchedState);
-        return { feeds };
-      })
-
-      .catch((err) => {
-        getErrorMessage(err);
-        watchedState.processLoading.status = 'error';
-      });
-  };
-
-  const setState = (feeds, watchedState) => {
-    watchedState.feedsList = feeds;
-  };
-
-  const checkForNewPosts = () => {
-    const promises = watchedState.ui.urlList.map((feedUrl) =>
-      fetchAndProcessRSS(feedUrl),
-    );
-
-    Promise.all(promises)
-      .then((results) => {
-        if (results) {
+      Promise.all(promises)
+        .then((results) => {
           results.forEach((feeds) => {
-            watchedState.feedsList.posts.push(...feeds);
+            if (feeds && feeds.posts && Array.isArray(feeds.posts)) {
+              feeds.posts.forEach((post) => {
+                watchedState.ui.seenPosts.unshift(post);
+              });
+            } else {
+              console.log('Unexpected data format:', feeds);
+            }
           });
-        }
-      })
-      .then(() => setTimeout(checkForNewPosts, 5000))
-      .catch((err) => {
-        console.error('Error processing RSS feeds:', err);
-      });
-  };
-
-  checkForNewPosts();
+        })
+        .then(() => setTimeout(checkForNewPosts, 5000))
+        .catch((err) => {
+          console.error('Error processing RSS feeds:', err);
+        });
+    };
+    checkForNewPosts();
+  });
 };

@@ -100,6 +100,9 @@ const handleProcessState = (elements, process, i18n) => {
     case 'success':
       elements.buttons.buttonEl.removeAttribute('disabled');
       break;
+    case 'error':
+      elements.buttons.buttonEl.removeAttribute('disabled');
+      break;
     default:
       break;
   }
