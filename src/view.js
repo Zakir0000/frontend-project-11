@@ -82,7 +82,7 @@ const handleErrors = (elements, i18n, state) => {
     document.querySelector('.rss-form').reset();
   } else {
     updatedElements.fields.inputEl.classList.add('is-invalid');
-    updatedElements.errorFields.inputEl.textContent = state.form.errors;
+    updatedElements.errorFields.inputEl.textContent = i18n.t(state.form.errors);
     updatedElements.errorFields.inputEl.classList.remove('text-success');
     updatedElements.errorFields.inputEl.classList.add('text-danger');
   }

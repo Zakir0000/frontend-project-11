@@ -46,7 +46,7 @@ export const renderPosts = (i18n, elements, watchedState) => {
     buttonEl.setAttribute('data-bs-target', '#modal');
     buttonEl.textContent = 'Просмотр';
     postElement.append(postLink, buttonEl);
-    ul.prepend(postElement);
+    ul.append(postElement);
     buttonEl.addEventListener('click', (e) => {
       e.preventDefault();
       const headTitle = document.createElement('h5');
@@ -95,10 +95,10 @@ export const renderFeeds = (i18n, elements, watchedState) => {
     li.classList.add('list-group-item', 'border-0', 'border-end-0');
     const feedHead = document.createElement('h3');
     feedHead.classList.add('h6', 'm-0');
-    feedHead.textContent = item.feed.feedTitle;
+    feedHead.textContent = item.feedTitle;
     const feedParag = document.createElement('p');
     feedParag.classList.add('m-0', 'small', 'text-black-50');
-    feedParag.textContent = item.feed.feedDescrip;
+    feedParag.textContent = item.feedDescrip;
     li.append(feedHead, feedParag);
     ul.append(li);
     card.append(ul);

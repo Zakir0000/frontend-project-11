@@ -3,7 +3,10 @@ const parseRSSData = (xmlData) => {
   const xmlDoc = parser.parseFromString(xmlData.contents, 'text/xml');
 
   if (!xmlDoc) {
-    throw new Error(`${xmlDoc.querySelector('parsererror')}`);
+    const errorMessage = xmlDoc.querySelector('parsererror').textContent;
+    const parsingError = new Error(`${errorMessage}`);
+    parsingError.isParserError = true;
+    throw parsingError;
   }
 
   const items = xmlDoc.getElementsByTagName('item');
@@ -12,7 +15,8 @@ const parseRSSData = (xmlData) => {
   const feedDescrip = channel.querySelector('description').textContent;
 
   const parsedData = {
-    feed: { feedTitle, feedDescrip },
+    feedTitle,
+    feedDescrip,
     posts: [],
   };
 

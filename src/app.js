@@ -18,11 +18,14 @@ export default () => {
     return proxyURL.toString();
   };
 
-  const getErrorMessage = (err, i18n) => {
-    if (!navigator.onLine) {
-      return i18n.t('errors.validation.networkErr');
+  const getErrorMessage = (err) => {
+    if (err.isParsingError) {
+      return 'errors.validation.rss';
     }
-    return `Error fetching or parsing RSS feed: ${err}`;
+    if (err.isAxiosError) {
+      return 'errors.validation.networkErr';
+    }
+    return 'errors.validation.rss';
   };
 
   const elements = {
@@ -46,15 +49,14 @@ export default () => {
   const state = {
     form: {
       valid: false,
-      errors: '',
+      errors: null,
     },
     processLoading: {
       status: 'filling',
-      errors: '',
+      errors: null,
     },
     ui: {
       seenPosts: [],
-      seenFeeds: [],
       urlList: [],
     },
     feedsList: [],
@@ -67,113 +69,72 @@ export default () => {
     resources,
   });
 
-  yup.setLocale({
-    string: {
-      url: () => i18n.t('errors.validation.url'),
-    },
-    mixed: {
-      uniqueUrl: () => i18n.t('errors.validation.uniqueUrl'),
-      rssFeed: () => i18n.t('errors.validation.rssFeed'),
-      notOneOf: () => i18n.t('errors.validation.uniqueUrl'),
-    },
-  });
-
   const watchedState = onChange(state, initView(elements, i18n, state));
 
   const form = document.querySelector('.rss-form');
+
+  const createValidationSchema = (url, feeds) => {
+    const baseSchema = yup.string().required().url().notOneOf(feeds);
+
+    return baseSchema
+      .validate(url, { abortEarly: false })
+      .then(() => null)
+      .catch((err) => {
+        if (err.message === 'this must be a valid URL') {
+          return 'errors.validation.url';
+        }
+        return 'errors.validation.uniqueUrl';
+      });
+  };
+  const setState = (feeds) => {
+    watchedState.feedsList.unshift(feeds);
+    feeds.posts.forEach((post) => watchedState.ui.seenPosts.push(post));
+  };
+
+  const fetchAndProcessRSS = (feedUrl) => {
+    const proxyUrl = addProxyToURL(feedUrl);
+    return axios
+      .get(proxyUrl)
+      .then((response) => {
+        const feeds = parseRSSData(response.data);
+        setState(feeds, watchedState);
+        renderPosts(i18n, elements, watchedState);
+        renderFeeds(i18n, elements, watchedState);
+        return feeds;
+      })
+
+      .catch((err) => {
+        watchedState.form.errors = getErrorMessage(err);
+        watchedState.processLoading.status = 'error';
+      });
+  };
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     watchedState.processLoading.status = 'sending';
     const inputData = document.getElementById('url-input').value;
 
-    const setState = (feeds) => {
-      watchedState.feedsList.unshift(feeds);
-      feeds.posts.forEach((post) => watchedState.ui.seenPosts.push(post));
-    };
-    const fetchAndProcessRSS = (feedUrl) => {
-      const proxyUrl = addProxyToURL(feedUrl);
-      return axios
-        .get(proxyUrl)
-        .then((response) => {
-          const feeds = parseRSSData(response.data);
-          setState(feeds, watchedState);
-          renderPosts(i18n, elements, watchedState);
-          renderFeeds(i18n, elements, watchedState);
-          return feeds;
-        })
-
-        .catch((err) => {
-          getErrorMessage(err);
-          watchedState.processLoading.status = 'error';
-        });
-    };
-
-    const createValidationSchema = (url, feeds) => yup
-      .string()
-      .required()
-      .url()
-      .notOneOf(feeds)
-      .test({
-        name: 'network-status',
-        message: i18n.t('errors.validation.networkErr'),
-        test: (value) => new Promise((resolve) => {
-          if (!navigator.onLine) {
-            resolve(false);
-          } else {
-            const proxUrl = addProxyToURL(value);
-            axios
-              .get(proxUrl)
-              .then(() => {
-                resolve(true);
-              })
-              .catch(() => {
-                resolve(false);
-              });
-          }
-        }),
-      })
-      .test(
-        'is-rss-feed',
-        i18n.t('errors.validation.rss'),
-        (value) => new Promise((resolve) => {
-          const proxUrl = addProxyToURL(value);
-          axios
-            .get(proxUrl)
-            .then((response) => response.data)
-            .then((data) => {
-              resolve(parseRSSData(data));
-            })
-            .catch(() => {
-              resolve(false);
-            });
-        }),
-      );
-
-    const validationSchema = createValidationSchema(
-      inputData,
-      watchedState.ui.urlList,
-    );
-    validationSchema
-      .validate(inputData, { abortEarly: false })
-      .then(() => {
-        watchedState.form.errors = [];
-        watchedState.form.valid = true;
-        watchedState.ui.urlList.push(inputData);
-        watchedState.processLoading.status = 'success';
-        fetchAndProcessRSS(inputData);
-      })
-      .catch((error) => {
-        const err = error.errors[0];
+    createValidationSchema(inputData, watchedState.ui.urlList).then((err) => {
+      if (err) {
         watchedState.processLoading.status = 'error';
         watchedState.form.errors = err;
-      });
+      } else {
+        fetchAndProcessRSS(inputData).then((error) => {
+          if (error) {
+            watchedState.processLoading.status = 'success';
+            watchedState.ui.urlList.push(inputData);
+            watchedState.form.valid = true;
+            watchedState.form.errors = [];
+          }
+        });
+      }
+    });
+
     const checkForNewPosts = () => {
       const promises = watchedState.ui.urlList.map((feedUrl) => {
         const proxyUrl = addProxyToURL(feedUrl);
         return axios.get(proxyUrl).then((response) => {
           const feeds = parseRSSData(response.data);
-
           const clonePosts = _.cloneDeep(watchedState.ui.seenPosts);
           const unitedPosts = [...clonePosts, ...feeds.posts];
           const selectedUnique = Object.values(
@@ -184,7 +145,6 @@ export default () => {
           );
           watchedState.ui.seenPosts = selectedUnique.reverse();
           renderPosts(i18n, elements, watchedState);
-          console.log(watchedState);
         });
       });
 
