@@ -1,3 +1,5 @@
+import onChange from 'on-change';
+
 const renderForm = (elements, i18n) => {
   const updatedElements = { ...elements };
   updatedElements.container.innerHTML = '';
@@ -108,16 +110,19 @@ const handleProcessState = (elements, process, i18n) => {
   }
 };
 
-const initView = (elements, i18n, state) => (path, value) => {
-  switch (path) {
-    case 'processLoading.status':
-      handleProcessState(elements, value, i18n);
-      break;
-    case 'form.errors':
-      handleErrors(elements, i18n, state);
-      break;
-    default:
-      break;
-  }
+const initView = (elements, i18n, state) => {
+  const watchedState = onChange(state, (path, value) => {
+    switch (path) {
+      case 'processLoading.status':
+        handleProcessState(elements, value, i18n);
+        break;
+      case 'form.errors':
+        handleErrors(elements, i18n, state);
+        break;
+      default:
+        break;
+    }
+  });
+  return watchedState;
 };
 export default initView;

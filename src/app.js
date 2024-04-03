@@ -1,5 +1,4 @@
 import * as yup from 'yup';
-import onChange from 'on-change';
 import _ from 'lodash';
 import i18next from 'i18next';
 import axios from 'axios';
@@ -69,7 +68,7 @@ export default () => {
     resources,
   });
 
-  const watchedState = onChange(state, initView(elements, i18n, state));
+  const watchedState = initView(elements, i18n, state);
 
   const form = document.querySelector('.rss-form');
 
@@ -86,21 +85,18 @@ export default () => {
         return 'errors.validation.uniqueUrl';
       });
   };
-  const setState = (feeds) => {
-    watchedState.feedsList.unshift(feeds);
-    feeds.posts.forEach((post) => watchedState.ui.seenPosts.push(post));
-  };
 
   const fetchAndProcessRSS = (feedUrl) => {
     const proxyUrl = addProxyToURL(feedUrl);
     return axios
       .get(proxyUrl)
       .then((response) => {
-        const feeds = parseRSSData(response.data);
-        setState(feeds, watchedState);
+        const feed = parseRSSData(response.data);
+        watchedState.feedsList.unshift(feed);
+        feed.posts.forEach((post) => watchedState.ui.seenPosts.push(post));
         renderPosts(i18n, elements, watchedState);
         renderFeeds(i18n, elements, watchedState);
-        return feeds;
+        return feed;
       })
 
       .catch((err) => {
@@ -112,7 +108,9 @@ export default () => {
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     watchedState.processLoading.status = 'sending';
-    const inputData = document.getElementById('url-input').value;
+
+    const data = new FormData(e.target);
+    const inputData = data.get('url');
 
     createValidationSchema(inputData, watchedState.ui.urlList).then((err) => {
       if (err) {
@@ -134,9 +132,9 @@ export default () => {
       const promises = watchedState.ui.urlList.map((feedUrl) => {
         const proxyUrl = addProxyToURL(feedUrl);
         return axios.get(proxyUrl).then((response) => {
-          const feeds = parseRSSData(response.data);
+          const feed = parseRSSData(response.data);
           const clonePosts = _.cloneDeep(watchedState.ui.seenPosts);
-          const unitedPosts = [...clonePosts, ...feeds.posts];
+          const unitedPosts = [...clonePosts, ...feed.posts];
           const selectedUnique = Object.values(
             unitedPosts.reduce((acc, obj) => {
               acc[obj.title] = obj;
