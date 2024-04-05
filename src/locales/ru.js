@@ -18,6 +18,7 @@ export default {
         rss: 'Ресурс не содержит валидный RSS',
         rssFeed: 'Невалидный RSS feed',
         networkErr: 'Ошибка сети',
+        unknownErr: 'Неизвестная ошибка',
       },
     },
   },

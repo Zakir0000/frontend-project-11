@@ -10,17 +10,17 @@ export const renderPosts = (i18n, elements, watchedState) => {
   const cardTitle = document.createElement('h2');
   cardTitle.classList.add('card-title', 'h4');
   cardTitle.textContent = i18n.t('postsHeader');
-  cardBody.append(cardTitle);
+  cardBody.prepend(cardTitle);
   const ul = document.createElement('ul');
   ul.classList.add('list-group', 'border-0', 'rounded-0');
-  card.append(cardBody, ul);
+  card.prepend(cardBody, ul);
   ul.classList.add('list-group', 'border-0', 'rounded-0');
 
-  elements.postsContainer.append(card);
+  elements.postsContainer.prepend(card);
   const modalHeader = document.querySelector('.modal-header');
   const modalBody = document.querySelector('.modal-body');
 
-  watchedState.ui.seenPosts.reverse().forEach((post) => {
+  watchedState.ui.seenPosts.forEach((post) => {
     const uniqId = uniqueId();
     const postElement = document.createElement('li');
     postElement.classList.add(
@@ -45,7 +45,7 @@ export const renderPosts = (i18n, elements, watchedState) => {
     buttonEl.setAttribute('data-bs-toggle', 'modal');
     buttonEl.setAttribute('data-bs-target', '#modal');
     buttonEl.textContent = 'Просмотр';
-    postElement.append(postLink, buttonEl);
+    postElement.prepend(postLink, buttonEl);
     ul.append(postElement);
     buttonEl.addEventListener('click', (e) => {
       e.preventDefault();
@@ -62,7 +62,7 @@ export const renderPosts = (i18n, elements, watchedState) => {
       closeBtn.setAttribute('data-bs-dismiss', 'modal');
       closeBtn.setAttribute('aria-label', 'Close');
 
-      modalHeader.append(headTitle, closeBtn);
+      modalHeader.prepend(headTitle, closeBtn);
       modalBody.textContent = post.desc;
       postLink.classList.remove('fw-bold');
       postLink.classList.add('fw-normal');

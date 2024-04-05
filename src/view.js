@@ -1,4 +1,5 @@
 import onChange from 'on-change';
+import { renderFeeds, renderPosts } from './renderPostsAndFeeds.js';
 
 const renderForm = (elements, i18n) => {
   const updatedElements = { ...elements };
@@ -90,7 +91,7 @@ const handleErrors = (elements, i18n, state) => {
   }
 };
 
-const handleProcessState = (elements, process, i18n) => {
+const handleProcessState = (elements, process, i18n, state) => {
   switch (process) {
     case 'filling':
       renderForm(elements, i18n);
@@ -101,10 +102,13 @@ const handleProcessState = (elements, process, i18n) => {
       break;
     case 'success':
       elements.buttons.buttonEl.removeAttribute('disabled');
+      renderPosts(i18n, elements, state);
+      renderFeeds(i18n, elements, state);
       break;
     case 'error':
       elements.buttons.buttonEl.removeAttribute('disabled');
       break;
+
     default:
       break;
   }
@@ -114,11 +118,15 @@ const initView = (elements, i18n, state) => {
   const watchedState = onChange(state, (path, value) => {
     switch (path) {
       case 'processLoading.status':
-        handleProcessState(elements, value, i18n);
+        handleProcessState(elements, value, i18n, watchedState);
         break;
       case 'form.errors':
-        handleErrors(elements, i18n, state);
+        handleErrors(elements, i18n, watchedState);
         break;
+      case 'ui.updated':
+        renderPosts(i18n, elements, watchedState);
+        break;
+
       default:
         break;
     }

@@ -2,17 +2,25 @@ const parseRSSData = (xmlData) => {
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(xmlData.contents, 'text/xml');
 
-  if (!xmlDoc) {
-    const errorMessage = xmlDoc.querySelector('parsererror').textContent;
-    const parsingError = new Error(`${errorMessage}`);
+  const errorMessage = xmlDoc.querySelector('parsererror');
+  if (errorMessage) {
+    const parsingError = new Error(errorMessage.textContent);
     parsingError.isParserError = true;
     throw parsingError;
   }
 
   const items = xmlDoc.getElementsByTagName('item');
   const channel = xmlDoc.querySelector('channel');
-  const feedTitle = channel.querySelector('title').textContent;
-  const feedDescrip = channel.querySelector('description').textContent;
+
+  let feedTitle = '';
+  let feedDescrip = '';
+
+  if (channel) {
+    feedTitle = (channel.querySelector('title')?.textContent || '').trim();
+    feedDescrip = (
+      channel.querySelector('description')?.textContent || ''
+    ).trim();
+  }
 
   const parsedData = {
     feedTitle,
