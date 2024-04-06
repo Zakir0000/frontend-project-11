@@ -11,6 +11,7 @@ export default {
     postsHeader: 'Посты',
     feedsHeader: 'Фиды',
     success: 'RSS успешно загружен',
+    view: 'Просмотр',
     errors: {
       validation: {
         url: 'Ссылка должна быть валидным URL',

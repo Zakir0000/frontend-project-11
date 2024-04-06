@@ -1,5 +1,113 @@
 import onChange from 'on-change';
-import { renderFeeds, renderPosts } from './renderPostsAndFeeds.js';
+
+const renderModalWindow = (post) => {
+  const modalHeader = document.querySelector('.modal-header');
+  const modalBody = document.querySelector('.modal-body');
+  const headTitle = document.createElement('h5');
+  headTitle.classList.add('modal-title');
+  headTitle.textContent = post.title;
+  modalHeader.innerHTML = '';
+  modalBody.innerHTML = '';
+  const closeBtn = document.createElement('button');
+  closeBtn.classList.add('btn-close', 'close');
+  closeBtn.setAttribute('type', 'button');
+  closeBtn.setAttribute('data-bs-dismiss', 'modal');
+  closeBtn.setAttribute('aria-label', 'Close');
+  modalHeader.prepend(headTitle, closeBtn);
+  modalBody.textContent = post.desc;
+};
+
+const renderPosts = (i18n, elements, watchedState) => {
+  const updatedElements = { ...elements };
+  updatedElements.postsContainer.innerHTML = '';
+  const card = document.createElement('div');
+  card.classList.add('card', 'border-0');
+  const cardBody = document.createElement('div');
+  cardBody.classList.add('card-body');
+  const cardTitle = document.createElement('h2');
+  cardTitle.classList.add('card-title', 'h4');
+  cardTitle.textContent = i18n.t('postsHeader');
+  cardBody.prepend(cardTitle);
+  const ul = document.createElement('ul');
+  ul.classList.add('list-group', 'border-0', 'rounded-0');
+  card.prepend(cardBody, ul);
+
+  updatedElements.postsContainer.prepend(card);
+
+  watchedState.ui.seenPosts.forEach((post) => {
+    const postElement = document.createElement('li');
+    postElement.classList.add(
+      'list-group-item',
+      'd-flex',
+      'justify-content-between',
+      'align-items-start',
+      'border-0',
+      'border-end-0',
+    );
+    const postLink = document.createElement('a');
+    postLink.setAttribute('href', post.link);
+    postLink.classList.add('fw-bold');
+    postLink.setAttribute('data-id', post.id);
+    postLink.setAttribute('target', '_blank');
+    postLink.setAttribute('rel', 'noopener noreferrer');
+    postLink.textContent = post.title;
+    const buttonEl = document.createElement('button');
+    buttonEl.setAttribute('type', 'button');
+    buttonEl.classList.add('btn', 'btn-outline-primary', 'btn-sm');
+    buttonEl.setAttribute('data-id', post.id);
+    buttonEl.setAttribute('data-bs-toggle', 'modal');
+    buttonEl.setAttribute('data-bs-target', '#modal');
+    buttonEl.textContent = i18n.t('view');
+    postElement.prepend(postLink, buttonEl);
+    ul.append(postElement);
+    buttonEl.addEventListener('click', (e) => {
+      e.preventDefault();
+
+      const buttnAlltext = document.querySelector('.modal-footer a');
+      buttnAlltext.setAttribute('href', post.link);
+      renderModalWindow(post);
+      postLink.classList.remove('fw-bold');
+      postLink.classList.add('fw-normal');
+    });
+    postLink.addEventListener('click', () => {
+      postLink.classList.remove('fw-bold');
+      postLink.classList.add('fw-normal', 'link-secondary');
+    });
+  });
+};
+
+const renderFeeds = (i18n, elements, watchedState) => {
+  const updatedElements = { ...elements };
+  updatedElements.feedsContainer.innerHTML = '';
+  const card = document.createElement('div');
+  card.classList.add('card', 'border-0');
+  const cardBody = document.createElement('div');
+  cardBody.classList.add('card-body');
+  const cardTitle = document.createElement('h2');
+  cardTitle.classList.add('card-title', 'h4');
+  cardTitle.textContent = i18n.t('feedsHeader');
+  cardBody.append(cardTitle);
+  card.append(cardBody);
+
+  const ul = document.createElement('ul');
+  ul.classList.add('list-group', 'border-0', 'rounded-0');
+  card.append(cardBody, ul);
+  ul.classList.add('list-group', 'border-0', 'rounded-0');
+  watchedState.feedsList.forEach((item) => {
+    const li = document.createElement('li');
+    li.classList.add('list-group-item', 'border-0', 'border-end-0');
+    const feedHead = document.createElement('h3');
+    feedHead.classList.add('h6', 'm-0');
+    feedHead.textContent = item.feedTitle;
+    const feedParag = document.createElement('p');
+    feedParag.classList.add('m-0', 'small', 'text-black-50');
+    feedParag.textContent = item.feedDescrip;
+    li.append(feedHead, feedParag);
+    ul.append(li);
+    card.append(ul);
+  });
+  updatedElements.feedsContainer.append(card);
+};
 
 const renderForm = (elements, i18n) => {
   const updatedElements = { ...elements };
@@ -34,7 +142,6 @@ const renderForm = (elements, i18n) => {
   inputEl.setAttribute('autocomplete', 'off');
   const labelEl = document.createElement('label');
   labelEl.setAttribute('for', 'url-input');
-  labelEl.textContent = 'Ссылка RSS';
   formFloatingEl.append(inputEl, labelEl);
   formColEl.append(formFloatingEl);
   const colAutoEl = document.createElement('div');
@@ -68,8 +175,8 @@ const renderForm = (elements, i18n) => {
 const getFormElements = (elements) => {
   const updatedElements = { ...elements };
   updatedElements.fields.inputEl = document.querySelector('#url-input');
-  updatedElements.errorFields.inputEl = document.querySelector('.feedback');
-  updatedElements.validFields.inputEl = document.querySelector('.feedback');
+  updatedElements.validationMessage.inputEl = document.querySelector('.feedback');
+  updatedElements.validationMessage.inputEl = document.querySelector('.feedback');
   updatedElements.buttons.buttonEl = document.querySelector(
     'button[type="submit"]',
   );
@@ -77,17 +184,19 @@ const getFormElements = (elements) => {
 
 const handleErrors = (elements, i18n, state) => {
   const updatedElements = { ...elements };
-  if (state.form.errors.length === 0) {
-    updatedElements.validFields.inputEl.textContent = i18n.t('success');
-    updatedElements.validFields.inputEl.classList.add('text-success');
-    updatedElements.validFields.inputEl.classList.remove('text-danger');
+  if (state.form.valid) {
+    updatedElements.validationMessage.inputEl.textContent = i18n.t('success');
+    updatedElements.validationMessage.inputEl.classList.add('text-success');
+    updatedElements.validationMessage.inputEl.classList.remove('text-danger');
     updatedElements.fields.inputEl.classList.remove('is-invalid');
     document.querySelector('.rss-form').reset();
   } else {
     updatedElements.fields.inputEl.classList.add('is-invalid');
-    updatedElements.errorFields.inputEl.textContent = i18n.t(state.form.errors);
-    updatedElements.errorFields.inputEl.classList.remove('text-success');
-    updatedElements.errorFields.inputEl.classList.add('text-danger');
+    updatedElements.validationMessage.inputEl.textContent = i18n.t(
+      state.form.errors,
+    );
+    updatedElements.validationMessage.inputEl.classList.remove('text-success');
+    updatedElements.validationMessage.inputEl.classList.add('text-danger');
   }
 };
 
@@ -123,8 +232,11 @@ const initView = (elements, i18n, state) => {
       case 'form.errors':
         handleErrors(elements, i18n, watchedState);
         break;
-      case 'ui.updated':
+      case 'ui.seenPosts':
         renderPosts(i18n, elements, watchedState);
+        break;
+      case 'form.valid':
+        handleErrors(elements, i18n, state);
         break;
 
       default:

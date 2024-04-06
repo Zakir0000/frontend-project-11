@@ -31,10 +31,7 @@ export default () => {
     fields: {
       inputEl: document.querySelector('#url-input'),
     },
-    errorFields: {
-      inputEl: document.querySelector('.feedback'),
-    },
-    validFields: {
+    validationMessage: {
       inputEl: document.querySelector('.feedback'),
     },
     buttons: {
@@ -53,7 +50,6 @@ export default () => {
     },
     ui: {
       seenPosts: [],
-      updated: [],
     },
     urlList: [],
     feedsList: [],
@@ -67,8 +63,6 @@ export default () => {
   });
 
   const watchedState = initView(elements, i18n, state);
-
-  const form = document.querySelector('.rss-form');
 
   const createValidationSchema = (url, feeds) => {
     const baseSchema = yup.string().required().url().notOneOf(feeds);
@@ -85,13 +79,14 @@ export default () => {
   };
 
   const fetchAndProcessRSS = (feedUrl) => {
+    watchedState.processLoading.status = 'sending';
     const proxyUrl = addProxyToURL(feedUrl);
-    return axios
+    axios
       .get(proxyUrl)
       .then((response) => {
         const feed = parseRSSData(response.data);
 
-        const feedId = `feed_${Date.now()}`;
+        const feedId = `feed_${_.uniqueId()}`;
         feed.id = feedId;
         watchedState.feedsList.unshift(feed);
 
@@ -101,23 +96,22 @@ export default () => {
           newPost.id = postId;
           newPost.feedId = feedId;
           watchedState.ui.seenPosts.push(newPost);
-          console.log(watchedState);
         });
 
         watchedState.processLoading.status = 'success';
-        watchedState.form.errors = [];
         watchedState.urlList.push(feedUrl);
+        watchedState.form.valid = true;
       })
       .catch((err) => {
         watchedState.form.errors = getErrorMessage(err);
         watchedState.processLoading.status = 'error';
+        watchedState.form.valid = false;
       });
   };
+  const form = document.querySelector('.rss-form');
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    watchedState.processLoading.status = 'sending';
-
     const data = new FormData(e.target);
     const inputData = data.get('url');
 
@@ -125,17 +119,9 @@ export default () => {
       if (err) {
         watchedState.processLoading.status = 'error';
         watchedState.form.errors = err;
+        watchedState.form.valid = false;
       } else {
-        fetchAndProcessRSS(inputData)
-          .then((item) => {
-            if (item) {
-              watchedState.ui.urlList.push(inputData);
-              watchedState.form.valid = true;
-            }
-          })
-          .catch((error) => {
-            getErrorMessage(error);
-          });
+        fetchAndProcessRSS(inputData);
       }
     });
 
@@ -144,16 +130,13 @@ export default () => {
         const proxyUrl = addProxyToURL(feedUrl);
         return axios.get(proxyUrl).then((response) => {
           const feed = parseRSSData(response.data);
-          const clonePosts = _.cloneDeep(watchedState.ui.seenPosts);
-          const unitedPosts = [...feed.posts, ...clonePosts];
-          const selectedUnique = Object.values(
-            unitedPosts.reduce((acc, obj) => {
-              acc[obj.title] = obj;
-              return acc;
-            }, {}),
-          );
-          watchedState.ui.seenPosts = selectedUnique;
-          watchedState.ui.updated = selectedUnique;
+          const postExt = (title) => watchedState.ui.seenPosts.some((post) => post.title === title);
+
+          feed.posts.forEach((newPost) => {
+            if (!postExt(newPost.title)) {
+              watchedState.ui.seenPosts.unshift(newPost);
+            }
+          });
         });
       });
 
