@@ -27,6 +27,7 @@ export default () => {
   const elements = {
     container: document.querySelector('.container-fluid'),
     postsContainer: document.querySelector('.posts'),
+
     feedsContainer: document.querySelector('.feeds'),
     fields: {
       inputEl: document.querySelector('#url-input'),
@@ -53,6 +54,7 @@ export default () => {
     },
     urlList: [],
     feedsList: [],
+    modalPostId: null,
   };
 
   const i18n = i18next.createInstance();
@@ -85,16 +87,15 @@ export default () => {
       .get(proxyUrl)
       .then((response) => {
         const feed = parseRSSData(response.data);
-
         const feedId = `feed_${_.uniqueId()}`;
         feed.id = feedId;
         watchedState.feedsList.unshift(feed);
-
         feed.posts.forEach((post) => {
           const postId = _.uniqueId(`post_${_.uniqueId()}`);
           const newPost = post;
           newPost.id = postId;
           newPost.feedId = feedId;
+          newPost.isLinkBold = true;
           watchedState.ui.seenPosts.push(newPost);
         });
 
@@ -105,11 +106,10 @@ export default () => {
       .catch((err) => {
         watchedState.form.errors = getErrorMessage(err);
         watchedState.processLoading.status = 'error';
-        watchedState.form.valid = false;
       });
   };
-  const form = document.querySelector('.rss-form');
 
+  const form = document.querySelector('.rss-form');
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const data = new FormData(e.target);
@@ -119,10 +119,19 @@ export default () => {
       if (err) {
         watchedState.processLoading.status = 'error';
         watchedState.form.errors = err;
-        watchedState.form.valid = false;
       } else {
         fetchAndProcessRSS(inputData);
       }
+    });
+
+    elements.postsContainer.addEventListener('click', (event) => {
+      const clickPost = event.target.dataset.id;
+      const clickedPost = watchedState.ui.seenPosts.find(
+        (post) => post.id === clickPost,
+      );
+      clickedPost.isLinkBold = !clickedPost.isLinkBold;
+      watchedState.modalPostId = clickedPost;
+      console.log(watchedState);
     });
 
     const checkForNewPosts = () => {
@@ -134,7 +143,11 @@ export default () => {
 
           feed.posts.forEach((newPost) => {
             if (!postExt(newPost.title)) {
-              watchedState.ui.seenPosts.unshift(newPost);
+              const postId = _.uniqueId(`post_${_.uniqueId()}`);
+              const nPost = newPost;
+              nPost.id = postId;
+              nPost.isLinkBold = true;
+              watchedState.ui.seenPosts.unshift(nPost);
             }
           });
         });
