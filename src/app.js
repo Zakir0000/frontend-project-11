@@ -139,8 +139,7 @@ export default () => {
         const proxyUrl = addProxyToURL(feedUrl);
         return axios.get(proxyUrl).then((response) => {
           const feed = parseRSSData(response.data);
-          const postExt = (title) =>
-            watchedState.ui.seenPosts.some((post) => post.title === title);
+          const postExt = (title) => watchedState.ui.seenPosts.some((post) => post.title === title);
 
           feed.posts.forEach((newPost) => {
             if (!postExt(newPost.title)) {
