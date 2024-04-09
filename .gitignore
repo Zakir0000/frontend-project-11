@@ -2,3 +2,5 @@
 *.log
 dist
 assets
+__fixtures__
+__tests__

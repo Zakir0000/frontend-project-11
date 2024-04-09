@@ -32,6 +32,4 @@ make develop
 # Starts the project build
 make build
 
-# Runs tests to check this app
-make test
 ```

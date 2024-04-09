@@ -102,6 +102,7 @@ export default () => {
         watchedState.processLoading.status = 'success';
         watchedState.urlList.push(feedUrl);
         watchedState.form.valid = true;
+        elements.fields.inputEl.focus();
       })
       .catch((err) => {
         watchedState.form.errors = getErrorMessage(err);
@@ -131,7 +132,6 @@ export default () => {
       );
       clickedPost.isLinkBold = !clickedPost.isLinkBold;
       watchedState.modalPostId = clickedPost;
-      console.log(watchedState);
     });
 
     const checkForNewPosts = () => {
@@ -139,7 +139,8 @@ export default () => {
         const proxyUrl = addProxyToURL(feedUrl);
         return axios.get(proxyUrl).then((response) => {
           const feed = parseRSSData(response.data);
-          const postExt = (title) => watchedState.ui.seenPosts.some((post) => post.title === title);
+          const postExt = (title) =>
+            watchedState.ui.seenPosts.some((post) => post.title === title);
 
           feed.posts.forEach((newPost) => {
             if (!postExt(newPost.title)) {
