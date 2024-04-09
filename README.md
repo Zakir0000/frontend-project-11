@@ -10,3 +10,28 @@
 
 Visit the deployed site to see it in action:
 [My Awesome Project](https://frontend-project-11-ivory-rho.vercel.app)
+
+```shell
+# Clone the repo
+git clone https://github.com/Zakir0000/frontend-project-11
+cd frontend-project-11
+
+# Install dependencies
+make install
+```
+
+## CLI
+
+```shell
+# Runs Eslint against source code for quality
+make lint
+
+# Starts the Webpack development server
+make develop
+
+# Starts the project build
+make build
+
+# Runs tests to check this app
+make test
+```
