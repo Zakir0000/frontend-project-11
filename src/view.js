@@ -135,7 +135,6 @@ const handleProcessState = (elements, process, i18n, state) => {
     case 'error':
       elements.buttons.buttonEl.removeAttribute('disabled');
       elements.buttons.buttonEl.removeAttribute('readonly');
-      elements.fields.inputEl.focus();
 
       break;
 

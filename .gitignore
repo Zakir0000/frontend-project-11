@@ -3,3 +3,4 @@
 assets
 /__fixtures__/
 /__tests__/
+/dist/

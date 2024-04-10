@@ -104,6 +104,7 @@ export default () => {
         watchedState.processLoading.status = 'success';
         watchedState.urlList.push(feedUrl);
         watchedState.form.valid = true;
+        watchedState.form.errors = null;
       })
       .catch((err) => {
         watchedState.form.errors = getErrorMessage(err);
