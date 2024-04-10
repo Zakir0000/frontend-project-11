@@ -1,5 +1,5 @@
 /node_modules/
 *.log
 assets
-__fixtures__
-__tests__
+/__fixtures__/
+/__tests__/
