@@ -31,7 +31,7 @@ const renderPosts = (i18n, elements, watchedState) => {
 
   updatedElements.postsContainer.prepend(card);
 
-  watchedState.ui.seenPosts.forEach((post) => {
+  watchedState.posts.forEach((post) => {
     const postElement = document.createElement('li');
     postElement.classList.add(
       'list-group-item',
@@ -45,11 +45,11 @@ const renderPosts = (i18n, elements, watchedState) => {
     postLink.setAttribute('href', post.link);
     postLink.classList.add('fw-bold');
 
-    if (post.isLinkBold) {
+    if (!post.isRead) {
       postLink.classList.add('fw-bold');
     } else {
-      postLink.classList.add('fw-normal', 'link-secondary');
       postLink.classList.remove('fw-bold');
+      postLink.classList.add('fw-normal', 'link-secondary');
     }
 
     postLink.setAttribute('data-id', post.id);
@@ -127,12 +127,16 @@ const handleProcessState = (elements, process, i18n, state) => {
     case 'success':
       elements.buttons.buttonEl.removeAttribute('disabled');
       elements.buttons.buttonEl.removeAttribute('readonly');
+      elements.fields.inputEl.focus();
+
       renderPosts(i18n, elements, state);
       renderFeeds(i18n, elements, state);
       break;
     case 'error':
       elements.buttons.buttonEl.removeAttribute('disabled');
       elements.buttons.buttonEl.removeAttribute('readonly');
+      elements.fields.inputEl.focus();
+
       break;
 
     default:
@@ -149,7 +153,7 @@ const initView = (elements, i18n, state) => {
       case 'form.errors':
         handleErrors(elements, i18n, watchedState);
         break;
-      case 'ui.seenPosts':
+      case 'posts':
         renderPosts(i18n, elements, watchedState);
         break;
       case 'form.valid':

@@ -49,12 +49,10 @@ export default () => {
       status: 'filling',
       errors: null,
     },
-    ui: {
-      seenPosts: [],
-    },
     urlList: [],
     feedsList: [],
     modalPostId: null,
+    posts: [],
   };
 
   const i18n = i18next.createInstance();
@@ -80,6 +78,14 @@ export default () => {
       });
   };
 
+  const addIdtoNewPost = (newPost) => {
+    const postId = _.uniqueId(`post_${_.uniqueId()}`);
+    const nPost = newPost;
+    nPost.id = postId;
+    nPost.isRead = false;
+    return nPost;
+  };
+
   const fetchAndProcessRSS = (feedUrl) => {
     watchedState.processLoading.status = 'sending';
     const proxyUrl = addProxyToURL(feedUrl);
@@ -91,18 +97,13 @@ export default () => {
         feed.id = feedId;
         watchedState.feedsList.unshift(feed);
         feed.posts.forEach((post) => {
-          const postId = _.uniqueId(`post_${_.uniqueId()}`);
-          const newPost = post;
-          newPost.id = postId;
-          newPost.feedId = feedId;
-          newPost.isLinkBold = true;
-          watchedState.ui.seenPosts.push(newPost);
+          const newPost = addIdtoNewPost(post);
+          watchedState.posts.push(newPost);
         });
 
         watchedState.processLoading.status = 'success';
         watchedState.urlList.push(feedUrl);
         watchedState.form.valid = true;
-        elements.fields.inputEl.focus();
       })
       .catch((err) => {
         watchedState.form.errors = getErrorMessage(err);
@@ -127,10 +128,10 @@ export default () => {
 
     elements.postsContainer.addEventListener('click', (event) => {
       const clickPost = event.target.dataset.id;
-      const clickedPost = watchedState.ui.seenPosts.find(
+      const clickedPost = watchedState.posts.find(
         (post) => post.id === clickPost,
       );
-      clickedPost.isLinkBold = !clickedPost.isLinkBold;
+      clickedPost.isRead = true;
       watchedState.modalPostId = clickedPost;
     });
 
@@ -139,15 +140,12 @@ export default () => {
         const proxyUrl = addProxyToURL(feedUrl);
         return axios.get(proxyUrl).then((response) => {
           const feed = parseRSSData(response.data);
-          const postExt = (title) => watchedState.ui.seenPosts.some((post) => post.title === title);
+          const postExt = (title) => watchedState.posts.some((post) => post.title === title);
 
           feed.posts.forEach((newPost) => {
             if (!postExt(newPost.title)) {
-              const postId = _.uniqueId(`post_${_.uniqueId()}`);
-              const nPost = newPost;
-              nPost.id = postId;
-              nPost.isLinkBold = true;
-              watchedState.ui.seenPosts.unshift(nPost);
+              const nPost = addIdtoNewPost(newPost);
+              watchedState.posts.unshift(nPost);
             }
           });
         });
